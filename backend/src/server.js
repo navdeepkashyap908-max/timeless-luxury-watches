@@ -53,6 +53,29 @@ if (process.env.NODE_ENV !== "test") {
   app.use(morgan("dev"));
 }
 
+// ---------------------------------------------------------------------------
+// Vercel Serverless DB Connection Middleware
+// ---------------------------------------------------------------------------
+// On Render/traditional servers, connectDB() is called once at startup inside
+// startServer() below, so this middleware is effectively a no-op (readyState===1).
+// On Vercel, startServer() / app.listen() are never called because Vercel imports
+// the Express `app` directly as a serverless handler. This middleware ensures
+// connectDB() is called on every cold-start invocation and safely reused on
+// warm ones (the readyState guard inside connectDB handles that).
+// ---------------------------------------------------------------------------
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("[Server] Database connection failed during request:", err.message);
+    res.status(503).json({
+      success: false,
+      error: "Service temporarily unavailable — database connection failed.",
+    });
+  }
+});
+
 // Health Check Route
 app.get("/api/health", (req, res) => {
   res.json({
@@ -107,8 +130,10 @@ export const startServer = async () => {
   return server;
 };
 
-// Auto-start when executed directly
-if (process.argv[1].endsWith("server.js")) {
+// Auto-start when executed directly (Render / local dev).
+// Guard against undefined argv[1] when the module is imported by Vercel or
+// evaluated inline (e.g. node -e "..."), so the import never throws.
+if (process.argv[1] && process.argv[1].endsWith("server.js")) {
   startServer();
 }
 

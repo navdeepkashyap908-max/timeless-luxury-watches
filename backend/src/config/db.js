@@ -5,12 +5,30 @@ const IS_PRODUCTION = process.env.NODE_ENV === "production";
 let mongodInstance = null;
 
 export const connectDB = async () => {
+  // --- Vercel warm-start reuse: if already connected, do nothing ---
+  // mongoose.connection.readyState: 0=disconnected, 1=connected, 2=connecting, 3=disconnecting
+  if (mongoose.connection.readyState === 1) {
+    console.log("[Database] Reusing existing MongoDB connection (warm invocation).");
+    return;
+  }
+
+  // If a connection is currently being established, wait for it rather than
+  // opening a second one (handles concurrent cold-start requests on Vercel).
+  if (mongoose.connection.readyState === 2) {
+    console.log("[Database] MongoDB connection already in progress, waiting...");
+    await new Promise((resolve, reject) => {
+      mongoose.connection.once("connected", resolve);
+      mongoose.connection.once("error", reject);
+    });
+    return;
+  }
+
   const uri = process.env.MONGODB_URI;
 
   // In production, MONGODB_URI is mandatory — fail fast with a clear message.
   if (IS_PRODUCTION && !uri) {
     console.error("[Database] FATAL: MONGODB_URI environment variable is not set.");
-    console.error("[Database] Please add MONGODB_URI to your Render environment variables.");
+    console.error("[Database] Please add MONGODB_URI to your Render/Vercel environment variables.");
     process.exit(1);
   }
 
