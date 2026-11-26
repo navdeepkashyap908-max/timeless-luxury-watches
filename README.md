@@ -13,6 +13,20 @@ An enterprise-grade, full-stack luxury timepiece storefront and private collecto
 
 ---
 
+## 🌐 Live Links & Project URLs
+
+| Service | Platform | URL |
+|---|---|---|
+| **Live Frontend Website** | Vercel | https://timeless-luxury-watches-chi.vercel.app |
+| **Live Backend API** | Render | https://timeless-luxury-watches.onrender.com |
+| **Backend Health Check** | Render | https://timeless-luxury-watches.onrender.com/api/health |
+| **Source Code Repository** | GitHub | https://github.com/navdeepkashyap908-max/timeless-luxury-watches |
+
+> [!NOTE]
+> The backend runs on Render's free tier, so if it has been idle for 15+ minutes, the first request may take ~30–60 seconds to wake up.
+
+---
+
 ## 🏛️ Project Overview
 
 **TIMELESS** embodies the heritage, prestige, and mechanical artistry of Swiss haute horlogerie. It delivers an exclusive digital salon experience for ultra-high-net-worth collectors, offering bespoke timepiece configuration, institutional escrow checkout with armored transit, instant pre-owned liquidation appraisals, and personalized concierge task management.
@@ -185,6 +199,50 @@ npm install
 npm run dev
 ```
 The React frontend will be accessible at `http://127.0.0.1:3000`.
+
+---
+
+## 🛠️ How This Website Was Created & Deployed (Step-by-Step)
+
+This project was built and deployed end-to-end using the following steps:
+
+### Step 1: Design & Frontend Development (`frontend/`)
+* Converted the Google Stitch luxury storefront designs (`stitch_timeless_luxury_watch_storefront/`) into a responsive **React 19 + Vite + Tailwind CSS** application.
+* Centralized all backend API calls in `frontend/src/services/api.js` using `import.meta.env.VITE_API_BASE_URL` (falling back to `http://127.0.0.1:5000/api` in local development).
+
+### Step 2: Backend API Development (`backend/`)
+* Built a separate **Node.js + Express.js** REST API in `backend/` with **Mongoose** schemas (`User`, `Task`, `Watch`, `Order`, `Valuation`).
+* Implemented `bcryptjs` password hashing, **JWT** authentication (`Authorization: Bearer <token>`), input validation, and centralized error handling.
+* Added automatic database seeding (`backend/src/seed.js`) for flagship timepieces and the demo collector account.
+
+### Step 3: Database Configuration (MongoDB Atlas + Dev Fallback)
+* Configured `backend/src/config/db.js` to connect to **MongoDB Atlas** via `MONGODB_URI` in production (`NODE_ENV=production`).
+* In local development (`NODE_ENV !== "production"`), it automatically falls back to `mongodb-memory-server` if no local MongoDB server is running—and skips `mongodb-memory-server` in production so Render's `--omit=dev` install succeeds cleanly.
+
+### Step 4: Version Control & Pushing to GitHub
+* Added a root `.gitignore` file to keep `node_modules/`, `backend/.env`, `frontend/.env`, `frontend/dist/`, and `*.log` out of Git.
+* Pushed the complete repository to GitHub: https://github.com/navdeepkashyap908-max/timeless-luxury-watches
+
+### Step 5: Deploying the Backend on Render
+1. Created a new **Web Service** on [Render](https://render.com) connected to the GitHub repository.
+2. Configured the service settings:
+   * **Root Directory**: `backend`
+   * **Build Command**: `npm install`
+   * **Start Command**: `npm start`
+3. Added the production environment variables in Render:
+   * `MONGODB_URI` — MongoDB Atlas connection string (with Atlas Network Access allowing `0.0.0.0/0`)
+   * `JWT_SECRET` — Strong random secret key for signing JWT tokens
+   * `JWT_EXPIRE` — `7d`
+   * `NODE_ENV` — `production`
+   * `CLIENT_URL` — `https://timeless-luxury-watches-chi.vercel.app`
+4. Verified the live API at: https://timeless-luxury-watches.onrender.com/api/health (`"database": "connected"`).
+
+### Step 6: Deploying the Frontend on Vercel & Connecting Both
+1. Imported the repository into [Vercel](https://vercel.com) with **Root Directory** set to `frontend`.
+2. Added the frontend environment variable in Vercel:
+   * `VITE_API_BASE_URL` = `https://timeless-luxury-watches.onrender.com/api`
+3. Deployed to https://timeless-luxury-watches-chi.vercel.app.
+4. Configured **CORS** in `backend/src/server.js` to allow requests from `https://timeless-luxury-watches-chi.vercel.app`, `CLIENT_URL`, and `localhost` in development.
 
 ---
 

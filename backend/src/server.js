@@ -22,23 +22,26 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
+  "https://timeless-luxury-watches-chi.vercel.app",
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps, curl, or Postman)
+      // Allow requests with no origin (like mobile apps, curl, health checks, or Postman)
       if (!origin) return callback(null, true);
       if (
-        allowedOrigins.indexOf(origin) !== -1 ||
+        allowedOrigins.includes(origin) ||
         origin.startsWith("http://localhost:") ||
         origin.startsWith("http://127.0.0.1:")
       ) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Permissive for development testing
+        return callback(null, true);
       }
+      if (process.env.NODE_ENV !== "production") {
+        return callback(null, true); // Permissive in local development/testing
+      }
+      return callback(new Error(`CORS policy: Origin '${origin}' is not allowed.`));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
